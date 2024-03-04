@@ -19,25 +19,25 @@ url = f"https://maker.ifttt.com/trigger/test_crew_ai/json/with/key/{IFTTT_KEY}"
 
 
 ifttt_tool = IFTTTWebhook(name="test_crew_ai", description="""Useful for sending emails with data.
-                When invoking the test_crew_ai.run() method, the parameter tool_input is required and should be of type string.
-
-                For example: tool_input="[string]"
+                When invoking the test_crew_ai.run() method, the parameter tool_input is required and should be of type string.\n
+                          ----------\n
+                        tool_input="{chunk}"
             """, url=url)
 search_tool = DuckDuckGoSearchRun()
 
-researcher = Agent(
-  role='Senior software sales',
-  goal="""craft a story about sales.""",
-  backstory="""You are a Senior software sales account executive and want to sell your sales tool to HVAC contractors. """,
+account_exec = Agent(
+  role='Senior software account executive',
+  goal="""Search the web and find prospects with contact information that can benefit from your software, ServiceTitan.""",
+  backstory="""You are a Senior software sales account executive and want to sell your software to HVAC companies in Los Angeles.""",
   verbose=True,
   allow_delegation=False,
 )
 
-writer = Agent(
-  role='Data Analyst',
-  goal="""Spell check the story and send it to the IFttt webhook tool to email to Param Singh at param@customer.ai'
+data_analyst = Agent(
+  role='Analyst',
+  goal="""Parse the returned prospects list and organize it in JSON format with name, phone number, and email. Send this list to the IFTTT webhook.
     """,
-  backstory="""You are a renowned data analyst and are in charge of formatting our pipeline for our sales team.""",
+  backstory="""You are a renowned data analyst and are in charge of formatting our pipeline for our sales team. You ensure there an no duplicates and double check that the accounts being added are verified.""",
   verbose=True,
   allow_delegation=False,
 )
@@ -52,21 +52,22 @@ def callback_function(output: TaskOutput):
     """)
 
 task1 = Task(
-  description="""write a story'
+  description="""Find a list of 10 prospects, each with a person to contact, phone, and email.
 """,
-  expected_output='a story with 10 sentences',
+  expected_output="A list of prospects",
   callback=callback_function,
-  agent=researcher,
+  agent=account_exec,
   tools=[search_tool]
 )
 
 task2 = Task(
-  description="""Take the story and email it using the test_crew_ai tool. 
-    You must call this tool the following parameter:
-                tool_input='[story]'
+  description="""Take the list of prospects, parse it into JSON format and email it using the test_crew_ai tool. 
+    You must call this tool the following parameter:\n
+                tool_input='{list_of_prospects}'
+              \n
     if there is an error, run the command again. 
     """,
-  agent=writer,
+  agent=data_analyst,
   tools=[ifttt_tool],
   callback=callback_function,
   context=[task1]
@@ -74,7 +75,7 @@ task2 = Task(
 
 # Instantiate your crew with a sequential process
 crew = Crew(
-  agents=[researcher, writer],
+  agents=[account_exec, data_analyst],
   tasks=[task1, task2],
   verbose=2
 )
