@@ -14,16 +14,17 @@ os.environ["OPENAI_MODEL_NAME"]= openai_model
 os.environ["OPENAI_API_KEY"]= openai_key
 
 
-# URL for If this than that
+# URL for IFTTT
 url = f"https://maker.ifttt.com/trigger/test_crew_ai/json/with/key/{IFTTT_KEY}"
 
-
+# Define IFTTT tool
 ifttt_tool = IFTTTWebhook(name="test_crew_ai", description="""Useful for sending emails with data.
                 When invoking the test_crew_ai.run() method, the parameter tool_input is required and should be of type string.\n
                           ----------\n
                         tool_input="{chunk}"
             """, url=url)
 search_tool = DuckDuckGoSearchRun()
+
 
 account_exec = Agent(
   role='Senior software account executive',
@@ -32,6 +33,7 @@ account_exec = Agent(
   verbose=True,
   allow_delegation=False,
 )
+
 
 data_analyst = Agent(
   role='Analyst',
@@ -43,13 +45,13 @@ data_analyst = Agent(
 )
 
 def callback_function(output: TaskOutput):
-    # Do something after the task is completed
-    # Example: Send an email to the manager
+    # Do something after a task is completed
     print(f"""
         Task completed!
         Task: {output.description}
         Output: {output.raw_output}
     """)
+
 
 task1 = Task(
   description="""Find a list of 10 prospects, each with a person to contact, phone, and email.
@@ -73,10 +75,12 @@ task2 = Task(
   context=[task1]
 )
 
+
 # Instantiate your crew with a sequential process
 crew = Crew(
   agents=[account_exec, data_analyst],
   tasks=[task1, task2],
+  process=Process.sequential,
   verbose=2
 )
 result = crew.kickoff()
